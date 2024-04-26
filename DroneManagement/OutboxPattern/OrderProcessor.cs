@@ -1,12 +1,18 @@
 ﻿namespace DroneManagement.OutboxPattern;
 
-public class OrderProcessor(IOrderRepository orderRepository, IOrderNotifier notifier)
+public class OrderProcessor(IOrderRepository orderRepository)
 {
     public async Task PlaceOrder(Order order)
     {
-        await orderRepository.Save(order);
-        await notifier.Notify(order);
+        OrderNotification orderNotification = new OrderNotification(order);
+        await orderRepository.SaveOrderAndNotification(orderNotification);
     }
+}
+
+public class OrderNotification(Order order)
+{
+    public Guid OrderId { get; set; } = order.Id;
+    public Order Order { get; set; } = order;
 }
 
 public interface IOrderNotifier
@@ -17,6 +23,8 @@ public interface IOrderNotifier
 public interface IOrderRepository
 {
     Task Save(Order order);
+    Task SaveOrderAndNotification(OrderNotification orderNotification);
+    Task<OrderNotification> RetrieveOutstandingNotification();
 }
 
 public class Order(Guid id, string customerName, string address, decimal totalAmount)
